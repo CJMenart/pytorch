@@ -4454,6 +4454,36 @@ class TestKL(DistributionsTestCase):
                 ]))
 
 
+@skipIfTorchDynamo("Not a TorchDynamo suitable test")
+class TestKLGrad(DistributionsTestCase):
+    def test_cat_klgrad(self):
+        # Case A
+        probs = torch.tensor([0., 1.], requires_grad=True)
+        div = kl_divergence(Categorical(probs), Categorical(probs))
+        div.backward()
+        self.assertEqual(probs.grad, torch.tensor([0.,0.]))
+        
+        # Case B
+        probs = torch.tensor([1., 1.], requires_grad=True)
+        div = kl_divergence(Categorical(probs), Categorical(probs))
+        div.backward()
+        self.assertEqual(probs.grad, torch.tensor([0.,0.]))
+
+        # Case C
+        probsA = torch.tensor([1., 0.], requires_grad=True)
+        probsB = torch.tensor([0.5, 0.5], requires_grad=True)
+        div = kl_divergence(Categorical(probsA), Categorical(probsB))
+        div.backward()
+        self.assertEqual(probsB.grad, torch.tensor([-1.,1.]))
+
+        # Case D
+        probsA = torch.tensor([1., 0.], requires_grad=True)
+        probsB = torch.tensor([0., 1.], requires_grad=True)
+        div = kl_divergence(Categorical(probsA), Categorical(probsB))
+        div.backward()
+        self.assertEqual(probsB.grad, torch.tensor([0.,0.]))
+
+
 class TestConstraints(DistributionsTestCase):
     def test_params_constraints(self):
         normalize_probs_dists = (
